@@ -8,5 +8,5 @@ edition = "2018"
 [dependencies]
 libuartmatrix = { path = "../libuartmatrix" }
 serialport = "4.0.1"
-iced = { version = "0.3.0", features = ["glow"] }
+iced = { version = "0.3.0", features = ["glow", "canvas", "glow_canvas"] }
 
