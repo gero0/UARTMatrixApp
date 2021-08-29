@@ -33,6 +33,35 @@ impl RgbSlidersState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    Left,
+    Right,
+}
+
+impl Default for Direction {
+    fn default() -> Direction {
+        Direction::Left
+    }
+}
+
+impl Direction {
+    pub const ALL: [Direction; 2] = [Direction::Left, Direction::Right];
+}
+
+impl std::fmt::Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Direction::Left => "Left",
+                Direction::Right => "Right",
+            }
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Animation {
     None,
     Slide,
@@ -58,6 +87,37 @@ impl std::fmt::Display for Animation {
                 Animation::None => "None",
                 Animation::Blink => "Blink",
                 Animation::Slide => "Slide",
+            }
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Font {
+    Default,
+    Pro,
+    Ibm,
+}
+
+impl Font {
+    pub const ALL: [Font; 3] = [Font::Default, Font::Pro, Font::Ibm];
+}
+
+impl Default for Font {
+    fn default() -> Font {
+        Font::Default
+    }
+}
+
+impl std::fmt::Display for Font {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Font::Default => "Default",
+                Font::Pro => "ProFont",
+                Font::Ibm => "IBM",
             }
         )
     }

@@ -1,13 +1,13 @@
 use crate::enums::{Animation, DisplayMode, FontType};
 
-mod enums;
+pub mod enums;
 
 pub const MAX_FRAME_SIZE: usize = 512;
 pub const MAX_TEXT_LENGTH: usize = 255;
 
 fn serialize_umx_frame(content: &[u8]) -> Option<[u8; MAX_FRAME_SIZE]> {
     if content.len() > MAX_FRAME_SIZE {
-        return None
+        return None;
     }
     let mut buffer = [0; MAX_FRAME_SIZE];
     buffer[0] = b'U';
@@ -114,4 +114,3 @@ mod tests {
         assert_eq!(&from_utf8(&frame[7..13]).unwrap()[0..12], "THISISATEST");
     }
 }
-
