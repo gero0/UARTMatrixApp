@@ -13,10 +13,12 @@ fn serialize_umx_frame(content: &[u8]) -> Option<[u8; MAX_FRAME_SIZE]> {
     buffer[0] = b'U';
     buffer[1] = b'M';
     buffer[2] = b'X';
-    buffer[3] = content.len() as u8;
+    let length = content.len() as u16;
+    buffer[3] = (length >> 8) as u8;
+    buffer[4] = length as u8;
 
     for i in 0..content.len() {
-        buffer[i + 4] = content[i];
+        buffer[i + 5] = content[i];
     }
 
     return Some(buffer);
@@ -27,7 +29,7 @@ pub fn serialize_param_request() -> Option<[u8; MAX_FRAME_SIZE]> {
 }
 
 pub fn serialize_switch_mode(mode: DisplayMode) -> Option<[u8; MAX_FRAME_SIZE]> {
-    serialize_umx_frame(&[mode.into()])
+    serialize_umx_frame(&[1, mode.into()])
 }
 
 pub fn serialize_write_line(row: u8, text: &str) -> Option<[u8; MAX_FRAME_SIZE]> {
@@ -64,7 +66,9 @@ pub fn serialize_draw_pixel(x: u8, y: u8, r: u8, g: u8, b: u8) -> Option<[u8; MA
 }
 
 pub fn serialize_draw_row(row: u8, pixels: Vec<(u8, u8, u8)>) -> Option<[u8; MAX_FRAME_SIZE]> {
-    let mut data = vec![7, row];
+    let mut data = vec![];
+    data.push(7);
+    data.push(row);
     for pixel in pixels {
         data.push(pixel.0);
         data.push(pixel.1);

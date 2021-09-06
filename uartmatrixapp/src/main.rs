@@ -1,8 +1,16 @@
+use std::ops::Deref;
+
 use iced::{
     Application, Button, Clipboard, Column, Command, Container, Element, PickList, Row, Settings,
     Text,
 };
+use image::imageops::FilterType;
+use image::io::Reader;
+use native_dialog::FileDialog;
 use serialport::SerialPort;
+
+use direct_mode_ui::{add_direct_mode_ui, DirectModeData};
+use libuartmatrix::enums::DisplayMode;
 
 use crate::{
     helper_structs::{Animation, Direction, Font},
@@ -11,6 +19,7 @@ use crate::{
     AppState::TextMode,
 };
 
+mod direct_mode_ui;
 mod helper_structs;
 mod rect;
 mod serial;
@@ -22,12 +31,13 @@ pub fn main() -> iced::Result {
 
 enum AppState {
     NotConnected,
-    TextMode(Box<dyn SerialPort>),
-    DirectMode(Box<dyn SerialPort>),
+    TextMode,
+    DirectMode,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    ChangeMode,
     PortSelected(String),
     RefreshDevices,
     ConnectDevice,
@@ -43,6 +53,11 @@ pub enum Message {
     SendColors,
     SendAnims,
     SendFonts,
+    //Direct mode
+    DrawPixel,
+    DrawRectangle,
+    DrawTriangle,
+    DrawCircle,
 }
 
 struct App {
@@ -52,12 +67,15 @@ struct App {
     refresh_btn: iced::button::State,
     ping_btn: iced::button::State,
     load_btn: iced::button::State,
+    change_mode_btn: iced::button::State,
 
+    device: Option<Box<dyn SerialPort>>,
     port_list: Vec<String>,
     port_select_state: iced::pick_list::State<String>,
     port_select_value: Option<String>,
 
     text_mode_data: TextModeData,
+    direct_mode_data: DirectModeData,
 }
 
 impl Application for App {
@@ -72,14 +90,17 @@ impl Application for App {
                 connect_btn: iced::button::State::new(),
                 refresh_btn: iced::button::State::new(),
                 ping_btn: iced::button::State::new(),
+                change_mode_btn: iced::button::State::new(),
 
                 load_btn: iced::button::State::new(),
+                device: None,
 
                 port_list: vec![],
                 port_select_state: iced::pick_list::State::default(),
                 port_select_value: None,
 
                 text_mode_data: TextModeData::new(),
+                direct_mode_data: DirectModeData::new(),
             },
             Command::none(),
         )
@@ -102,7 +123,8 @@ impl Application for App {
                     let sp = serialport::new(port, 115200).open();
                     match sp {
                         Ok(s_port) => {
-                            self.state = AppState::TextMode(s_port);
+                            self.state = AppState::TextMode;
+                            self.device = Some(s_port);
                         }
                         Err(e) => {
                             println!("{}", e)
@@ -147,21 +169,27 @@ impl Application for App {
             }
 
             Message::SendText => {
-                if let TextMode(device) = &mut self.state {
-                    send_text(device.as_mut(), &self.text_mode_data.text_rows_values);
+                if let TextMode = &mut self.state {
+                    send_text(
+                        self.device.as_mut().unwrap().as_mut(),
+                        &self.text_mode_data.text_rows_values,
+                    );
                 }
             }
 
             Message::SendColors => {
-                if let TextMode(device) = &mut self.state {
-                    send_colors(device.as_mut(), &self.text_mode_data.color_slider_values);
+                if let TextMode = &mut self.state {
+                    send_colors(
+                        self.device.as_mut().unwrap().as_mut(),
+                        &self.text_mode_data.color_slider_values,
+                    );
                 }
             }
 
             Message::SendAnims => {
-                if let TextMode(device) = &mut self.state {
+                if let TextMode = &mut self.state {
                     send_animations(
-                        device.as_mut(),
+                        self.device.as_mut().unwrap().as_mut(),
                         &self.text_mode_data.anim_select_values,
                         &self.text_mode_data.anim_speed_values,
                         &self.text_mode_data.anim_direction_values,
@@ -170,9 +198,57 @@ impl Application for App {
             }
 
             Message::SendFonts => {
-                if let TextMode(device) = &mut self.state {
-                    send_fonts(device.as_mut(), &self.text_mode_data.font_values);
+                if let TextMode = &mut self.state {
+                    send_fonts(
+                        self.device.as_mut().unwrap().as_mut(),
+                        &self.text_mode_data.font_values,
+                    );
                 }
+            }
+
+            Message::ChangeMode => {
+                match &mut self.state {
+                    AppState::TextMode => {
+                        //send command to switch mode
+                        self.state = AppState::DirectMode;
+                        send_change_mode(
+                            self.device.as_mut().unwrap().as_mut(),
+                            DisplayMode::Direct,
+                        );
+                    }
+                    AppState::DirectMode => {
+                        //send command to switch mode
+                        self.state = AppState::TextMode;
+                        send_change_mode(self.device.as_mut().unwrap().as_mut(), DisplayMode::Text);
+                    }
+                    _ => {}
+                }
+            }
+
+            Message::LoadImage => {
+                let path = FileDialog::new()
+                    .add_filter("PNG Image", &["png"])
+                    .add_filter("JPEG Image", &["jpg", "jpeg"])
+                    .show_open_single_file()
+                    .unwrap();
+
+                match path {
+                    Some(path) => {
+                        let result = Reader::open(path);
+                        match result {
+                            Ok(img) => {
+                                let img = img.decode();
+                                if let Ok(mut img) = img {
+                                    let img = img.resize(64, 32, FilterType::Gaussian);
+                                    let img = img.into_rgb8();
+                                    send_image(self.device.as_mut().unwrap().as_mut(), img);
+                                }
+                            }
+                            Err(_e) => println!("Error opening file"),
+                        }
+                    }
+                    None => {}
+                };
             }
 
             _ => {}
@@ -194,11 +270,13 @@ impl Application for App {
 
         let mut connect_button = Button::new(&mut self.connect_btn, Text::new("Connect"));
         let mut ping_button = Button::new(&mut self.ping_btn, Text::new("Ping"));
-
+        let mut change_mode_button =
+            Button::new(&mut self.change_mode_btn, Text::new("Change display mode"));
         if let AppState::NotConnected = self.state {
             connect_button = connect_button.on_press(Message::ConnectDevice);
         } else {
             ping_button = ping_button.on_press(Message::Ping);
+            change_mode_button = change_mode_button.on_press(Message::ChangeMode);
         }
 
         let controls = Row::new()
@@ -206,15 +284,21 @@ impl Application for App {
             .push(port_list)
             .push(refresh_button)
             .push(connect_button)
-            .push(ping_button);
+            .push(ping_button)
+            .push(change_mode_button);
 
         let mut content = Column::new().push(controls).spacing(20);
 
         match &mut self.state {
-            AppState::TextMode(_device) => {
+            AppState::TextMode => {
                 let (left_column, right_column) = add_text_mode_ui(&mut self.text_mode_data);
                 let text_ui = Row::new().push(left_column).push(right_column).spacing(20);
                 content = content.push(text_ui);
+            }
+            AppState::DirectMode => {
+                let (left_column, right_column) = add_direct_mode_ui(&mut self.direct_mode_data);
+                let ui = Row::new().push(left_column).push(right_column).spacing(20);
+                content = content.push(ui);
             }
             _ => {}
         }

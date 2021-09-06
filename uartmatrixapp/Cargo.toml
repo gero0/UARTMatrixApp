@@ -9,4 +9,5 @@ edition = "2018"
 libuartmatrix = { path = "../libuartmatrix" }
 serialport = "4.0.1"
 iced = { version = "0.3.0", features = ["glow", "canvas", "glow_canvas"] }
-
+image = "0.23.14"
+native-dialog = "0.5.5"
