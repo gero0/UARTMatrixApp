@@ -1,4 +1,3 @@
-use std::io::{Read, Write};
 use std::{thread, time};
 
 use image::RgbImage;
@@ -11,14 +10,14 @@ use crate::helper_structs::{Animation, Direction, Font, RgbColor};
 
 pub fn send_text(port: &mut dyn SerialPort, text_rows: &[String]) {
     for (i, row) in text_rows.iter().enumerate() {
-        if row.len() == 0 {
+        if row.is_empty() {
             continue;
         }
         let result = serialize_write_line(i as u8, row.as_str());
         if let Some(packet) = result {
-            port.write(&packet);
+            let _result = port.write(&packet);
             let mut buffer = [0; 20];
-            port.read(&mut buffer);
+            let _result = port.read(&mut buffer);
             thread::sleep(time::Duration::from_millis(20));
         }
     }
@@ -28,7 +27,7 @@ pub fn send_colors(port: &mut dyn SerialPort, color_rows: &[RgbColor]) {
     for (i, row) in color_rows.iter().enumerate() {
         let result = serialize_set_color(i as u8, row.r as u8, row.g as u8, row.b as u8);
         if let Some(packet) = result {
-            port.write(&packet);
+            let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(20));
         }
     }
@@ -81,7 +80,7 @@ pub fn send_animations(
 
         let result = serialize_set_animation(i as u8, animation);
         if let Some(packet) = result {
-            port.write(&packet);
+            let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(20));
         }
     }
@@ -102,7 +101,7 @@ pub fn send_fonts(port: &mut dyn SerialPort, fonts: &[Option<Font>]) {
         let result = serialize_set_font(i as u8, font.into());
 
         if let Some(packet) = result {
-            port.write(&packet);
+            let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(20));
         }
     }
@@ -111,7 +110,7 @@ pub fn send_fonts(port: &mut dyn SerialPort, fonts: &[Option<Font>]) {
 pub fn send_change_mode(port: &mut dyn SerialPort, mode: DisplayMode) {
     let result = serialize_switch_mode(mode);
     if let Some(packet) = result {
-        port.write(&packet);
+        let _result = port.write(&packet);
         thread::sleep(time::Duration::from_millis(20));
     }
 }
@@ -127,7 +126,7 @@ pub fn send_image(port: &mut dyn SerialPort, image: RgbImage) {
 
         let result = serialize_draw_row(i as u8, row_vec);
         if let Some(packet) = result {
-            port.write(&packet);
+            let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(50));
         }
     }

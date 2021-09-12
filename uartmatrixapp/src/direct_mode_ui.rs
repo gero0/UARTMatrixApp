@@ -72,5 +72,5 @@ pub fn add_direct_mode_ui(data: &mut DirectModeData) -> (Column<Message>, Column
 
     left_column = left_column.push(load_file_button).push(button_row);
 
-    return (left_column, right_column);
+    (left_column, right_column)
 }

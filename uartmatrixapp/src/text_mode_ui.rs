@@ -2,11 +2,15 @@ use std::ops::RangeInclusive;
 
 use iced::{Button, Canvas, Column, Length, PickList, Row, Slider, Text, TextInput};
 
-use crate::{Message, helper_structs::{Animation, Direction, Font, RgbColor, RgbSlidersState}, rect::Rect};
+use crate::{
+    helper_structs::{Animation, Direction, Font, RgbColor, RgbSlidersState},
+    rect::Rect,
+    Message,
+};
 
 pub const COLOR_SLIDER_RANGE: RangeInclusive<i32> = 0..=255;
 
-pub struct TextModeData{
+pub struct TextModeData {
     pub send_colors_btn: iced::button::State,
     pub send_anims_btn: iced::button::State,
     pub send_text_btn: iced::button::State,
@@ -30,8 +34,8 @@ pub struct TextModeData{
     pub color_slider_values: [RgbColor; 3],
 }
 
-impl TextModeData{
-    pub fn new() -> Self{
+impl TextModeData {
+    pub fn new() -> Self {
         TextModeData {
             send_colors_btn: iced::button::State::new(),
             send_text_btn: iced::button::State::new(),
@@ -84,7 +88,7 @@ impl TextModeData{
     }
 }
 
-pub fn add_text_mode_ui<'a>(data: &'a mut TextModeData) -> (Column<'a, Message>, Column<'a, Message>){
+pub fn add_text_mode_ui(data: &mut TextModeData) -> (Column<Message>, Column<Message>) {
     let mut left_column = Column::new().max_width(600).spacing(20);
     let mut right_column = Column::new().max_width(600).spacing(20);
 
@@ -94,8 +98,8 @@ pub fn add_text_mode_ui<'a>(data: &'a mut TextModeData) -> (Column<'a, Message>,
         &mut data.text_rows_values,
     );
 
-    let send_text_button = Button::new(&mut data.send_text_btn, Text::new("Send text"))
-        .on_press(Message::SendText);
+    let send_text_button =
+        Button::new(&mut data.send_text_btn, Text::new("Send text")).on_press(Message::SendText);
 
     left_column = left_column.push(send_text_button);
 
@@ -105,11 +109,10 @@ pub fn add_text_mode_ui<'a>(data: &'a mut TextModeData) -> (Column<'a, Message>,
         &mut data.color_slider_values,
     );
 
-    let mut send_colors_button =
-        Button::new(&mut data.send_colors_btn, Text::new("Set colors"))
-            .on_press(Message::SendColors);
+    let send_colors_button = Button::new(&mut data.send_colors_btn, Text::new("Set colors"))
+        .on_press(Message::SendColors);
 
-        left_column = left_column.push(send_colors_button);
+    left_column = left_column.push(send_colors_button);
 
     right_column = add_anim_section(
         right_column,
@@ -121,22 +124,19 @@ pub fn add_text_mode_ui<'a>(data: &'a mut TextModeData) -> (Column<'a, Message>,
         &mut data.anim_direction_values,
     );
 
-    let mut send_anims_button =
-        Button::new(&mut data.send_anims_btn, Text::new("Set animations"))
-            .on_press(Message::SendAnims);
+    let send_anims_button = Button::new(&mut data.send_anims_btn, Text::new("Set animations"))
+        .on_press(Message::SendAnims);
 
     right_column = right_column.push(send_anims_button);
 
     right_column = add_font_section(right_column, &mut data.font_states, &mut data.font_values);
 
-    let mut send_fonts_button =
-        Button::new(&mut data.send_fonts_btn, Text::new("Set fonts"))
-            .on_press(Message::SendFonts);
+    let send_fonts_button =
+        Button::new(&mut data.send_fonts_btn, Text::new("Set fonts")).on_press(Message::SendFonts);
 
     right_column = right_column.push(send_fonts_button);
 
-    return (left_column, right_column);
-
+    (left_column, right_column)
 }
 
 fn add_text_section<'a>(
@@ -163,7 +163,7 @@ fn add_text_section<'a>(
         .push(text_field_2)
         .push(text_field_3);
 
-    return content;
+    content
 }
 
 fn add_slider_section<'a>(
@@ -219,7 +219,7 @@ fn add_slider_section<'a>(
             .push(slider_row);
     }
 
-    return content;
+    content
 }
 
 fn add_anim_section<'a>(
@@ -268,7 +268,7 @@ fn add_anim_section<'a>(
         direction_values[2],
     );
 
-    return content;
+    content
 }
 
 fn create_single_anim_section<'a>(
@@ -321,7 +321,7 @@ fn create_single_anim_section<'a>(
 
     content = content.push(row);
 
-    return content;
+    content
 }
 
 fn add_font_section<'a>(
@@ -334,7 +334,7 @@ fn add_font_section<'a>(
     for (i, (state, value)) in font_states.iter_mut().zip(font_values).enumerate() {
         let mut row = Row::new().spacing(20);
 
-        let font_picker = PickList::new(state, &Font::ALL[..], value.clone(), move |value| {
+        let font_picker = PickList::new(state, &Font::ALL[..], *value, move |value| {
             Message::FontChanged(value, i)
         });
 
@@ -345,5 +345,5 @@ fn add_font_section<'a>(
         content = content.push(row);
     }
 
-    return content;
+    content
 }

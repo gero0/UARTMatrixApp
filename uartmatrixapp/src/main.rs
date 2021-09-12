@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use iced::{
     Application, Button, Clipboard, Column, Command, Container, Element, PickList, Row, Settings,
     Text,
@@ -66,7 +64,6 @@ struct App {
     connect_btn: iced::button::State,
     refresh_btn: iced::button::State,
     ping_btn: iced::button::State,
-    load_btn: iced::button::State,
     change_mode_btn: iced::button::State,
 
     device: Option<Box<dyn SerialPort>>,
@@ -92,7 +89,6 @@ impl Application for App {
                 ping_btn: iced::button::State::new(),
                 change_mode_btn: iced::button::State::new(),
 
-                load_btn: iced::button::State::new(),
                 device: None,
 
                 port_list: vec![],
@@ -134,12 +130,12 @@ impl Application for App {
             }
 
             Message::TextChanged(content, id) => {
-                let mut text_row = &mut self.text_mode_data.text_rows_values[id];
+                let text_row = &mut self.text_mode_data.text_rows_values[id];
                 *text_row = content;
             }
 
             Message::AnimChanged(animation, id) => {
-                let mut anim = &mut self.text_mode_data.anim_select_values[id];
+                let anim = &mut self.text_mode_data.anim_select_values[id];
                 *anim = Some(animation);
             }
 
@@ -154,17 +150,17 @@ impl Application for App {
             }
 
             Message::AnimSpeedChanged(value, row) => {
-                let mut row = &mut self.text_mode_data.anim_speed_values[row];
+                let row = &mut self.text_mode_data.anim_speed_values[row];
                 *row = value;
             }
 
             Message::AnimDirectionChanged(direction, row) => {
-                let mut row = &mut self.text_mode_data.anim_direction_values[row];
+                let row = &mut self.text_mode_data.anim_direction_values[row];
                 *row = Some(direction);
             }
 
             Message::FontChanged(font, row) => {
-                let mut row = &mut self.text_mode_data.font_values[row];
+                let row = &mut self.text_mode_data.font_values[row];
                 *row = Some(font);
             }
 
@@ -232,22 +228,19 @@ impl Application for App {
                     .show_open_single_file()
                     .unwrap();
 
-                match path {
-                    Some(path) => {
-                        let result = Reader::open(path);
-                        match result {
-                            Ok(img) => {
-                                let img = img.decode();
-                                if let Ok(mut img) = img {
-                                    let img = img.resize(64, 32, FilterType::Gaussian);
-                                    let img = img.into_rgb8();
-                                    send_image(self.device.as_mut().unwrap().as_mut(), img);
-                                }
+                if let Some(path) = path {
+                    let result = Reader::open(path);
+                    match result {
+                        Ok(img) => {
+                            let img = img.decode();
+                            if let Ok(img) = img {
+                                let img = img.resize(64, 32, FilterType::Gaussian);
+                                let img = img.into_rgb8();
+                                send_image(self.device.as_mut().unwrap().as_mut(), img);
                             }
-                            Err(_e) => println!("Error opening file"),
                         }
+                        Err(_e) => println!("Error opening file"),
                     }
-                    None => {}
                 };
             }
 
