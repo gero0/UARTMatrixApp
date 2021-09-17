@@ -2,8 +2,10 @@ use std::ops::RangeInclusive;
 
 use iced::{Button, Canvas, Column, Length, PickList, Row, Slider, Text, TextInput};
 
+use libuartmatrix::RgbColor;
+
 use crate::{
-    helper_structs::{Animation, Direction, Font, RgbColor, RgbSlidersState},
+    helper_structs::{Animation, Direction, Font, RgbSlidersState},
     rect::Rect,
     Message,
 };
@@ -177,19 +179,19 @@ fn add_slider_section<'a>(
         let slider_r = Slider::new(
             &mut state.r,
             COLOR_SLIDER_RANGE,
-            color_values[i].r,
+            color_values[i].r as i32,
             move |value| Message::ColorChanged(value, i, 0),
         );
         let slider_g = Slider::new(
             &mut state.g,
             COLOR_SLIDER_RANGE,
-            color_values[i].g,
+            color_values[i].g as i32,
             move |value| Message::ColorChanged(value, i, 1),
         );
         let slider_b = Slider::new(
             &mut state.b,
             COLOR_SLIDER_RANGE,
-            color_values[i].b,
+            color_values[i].b as i32,
             move |value| Message::ColorChanged(value, i, 2),
         );
 

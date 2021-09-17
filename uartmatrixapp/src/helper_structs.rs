@@ -1,21 +1,4 @@
 #[derive(Debug, Copy, Clone)]
-pub struct RgbColor {
-    pub r: i32,
-    pub g: i32,
-    pub b: i32,
-}
-
-impl RgbColor {
-    pub fn new() -> Self {
-        RgbColor {
-            r: 128,
-            g: 128,
-            b: 128,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
 pub struct RgbSlidersState {
     pub r: iced::slider::State,
     pub g: iced::slider::State,

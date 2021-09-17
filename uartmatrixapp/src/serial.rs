@@ -6,7 +6,7 @@ use serialport::SerialPort;
 use libuartmatrix::enums::DisplayMode;
 use libuartmatrix::*;
 
-use crate::helper_structs::{Animation, Direction, Font, RgbColor};
+use crate::helper_structs::{Animation, Direction, Font};
 
 pub fn send_text(port: &mut dyn SerialPort, text_rows: &[String]) {
     for (i, row) in text_rows.iter().enumerate() {
@@ -25,7 +25,14 @@ pub fn send_text(port: &mut dyn SerialPort, text_rows: &[String]) {
 
 pub fn send_colors(port: &mut dyn SerialPort, color_rows: &[RgbColor]) {
     for (i, row) in color_rows.iter().enumerate() {
-        let result = serialize_set_color(i as u8, row.r as u8, row.g as u8, row.b as u8);
+        let result = serialize_set_color(
+            i as u8,
+            RgbColor {
+                r: row.r,
+                g: row.g,
+                b: row.b,
+            },
+        );
         if let Some(packet) = result {
             let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(20));
@@ -129,5 +136,203 @@ pub fn send_image(port: &mut dyn SerialPort, image: RgbImage) {
             let _result = port.write(&packet);
             thread::sleep(time::Duration::from_millis(50));
         }
+    }
+}
+
+pub fn send_draw_pixel(port: &mut dyn SerialPort, x: &str, y: &str, color: &RgbColor) {
+    let x: Result<u8, _> = x.parse();
+    let y: Result<u8, _> = y.parse();
+
+    if x.is_err() || y.is_err() {
+        return;
+    }
+
+    let result = serialize_draw_pixel(
+        Point {
+            x: x.unwrap(),
+            y: y.unwrap(),
+        },
+        *color,
+    );
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
+
+pub fn send_draw_line(
+    port: &mut dyn SerialPort,
+    x_1: &str,
+    y_1: &str,
+    x_2: &str,
+    y_2: &str,
+    color: &RgbColor,
+    thickness: &str,
+) {
+    let x_1: Result<u8, _> = x_1.parse();
+    let y_1: Result<u8, _> = y_1.parse();
+    let x_2: Result<u8, _> = x_2.parse();
+    let y_2: Result<u8, _> = y_2.parse();
+    let thickness: Result<u8, _> = thickness.parse();
+
+    if x_1.is_err() || y_1.is_err() || x_2.is_err() || y_2.is_err() || thickness.is_err() {
+        return;
+    }
+
+    let result = serialize_draw_line(
+        Point {
+            x: x_1.unwrap(),
+            y: y_1.unwrap(),
+        },
+        Point {
+            x: x_2.unwrap(),
+            y: y_2.unwrap(),
+        },
+        thickness.unwrap(),
+        *color,
+    );
+
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
+
+pub fn send_draw_rectangle(
+    port: &mut dyn SerialPort,
+    x_1: &str,
+    y_1: &str,
+    x_2: &str,
+    y_2: &str,
+    color: &RgbColor,
+    thickness: &str,
+    filled: bool,
+) {
+    let x_1: Result<u8, _> = x_1.parse();
+    let y_1: Result<u8, _> = y_1.parse();
+    let x_2: Result<u8, _> = x_2.parse();
+    let y_2: Result<u8, _> = y_2.parse();
+    let thickness: Result<u8, _> = thickness.parse();
+
+    if x_1.is_err() || y_1.is_err() || x_2.is_err() || y_2.is_err() || thickness.is_err() {
+        return;
+    }
+
+    let result = serialize_draw_rectangle(
+        Point {
+            x: x_1.unwrap(),
+            y: y_1.unwrap(),
+        },
+        Point {
+            x: x_2.unwrap(),
+            y: y_2.unwrap(),
+        },
+        thickness.unwrap(),
+        *color,
+        filled,
+    );
+
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
+
+pub fn send_draw_triangle(
+    port: &mut dyn SerialPort,
+    x_1: &str,
+    y_1: &str,
+    x_2: &str,
+    y_2: &str,
+    x_3: &str,
+    y_3: &str,
+    color: &RgbColor,
+    thickness: &str,
+    filled: bool,
+) {
+    let x_1: Result<u8, _> = x_1.parse();
+    let y_1: Result<u8, _> = y_1.parse();
+    let x_2: Result<u8, _> = x_2.parse();
+    let y_2: Result<u8, _> = y_2.parse();
+    let x_3: Result<u8, _> = x_3.parse();
+    let y_3: Result<u8, _> = y_3.parse();
+    let thickness: Result<u8, _> = thickness.parse();
+
+    if x_1.is_err()
+        || y_1.is_err()
+        || x_2.is_err()
+        || y_2.is_err()
+        || x_3.is_err()
+        || y_3.is_err()
+        || thickness.is_err()
+    {
+        return;
+    }
+
+    let result = serialize_draw_triangle(
+        Point {
+            x: x_1.unwrap(),
+            y: y_1.unwrap(),
+        },
+        Point {
+            x: x_2.unwrap(),
+            y: y_2.unwrap(),
+        },
+        Point {
+            x: x_3.unwrap(),
+            y: y_3.unwrap(),
+        },
+        thickness.unwrap(),
+        *color,
+        filled,
+    );
+
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
+
+pub fn send_draw_circle(
+    port: &mut dyn SerialPort,
+    x_1: &str,
+    y_1: &str,
+    radius: &str,
+    color: &RgbColor,
+    thickness: &str,
+    filled: bool,
+) {
+    let x_1: Result<u8, _> = x_1.parse();
+    let y_1: Result<u8, _> = y_1.parse();
+    let radius: Result<u8, _> = radius.parse();
+    let thickness: Result<u8, _> = thickness.parse();
+
+    if x_1.is_err() || y_1.is_err() || radius.is_err() || thickness.is_err() {
+        return;
+    }
+
+    let result = serialize_draw_circle(
+        Point {
+            x: x_1.unwrap(),
+            y: y_1.unwrap(),
+        },
+        radius.unwrap(),
+        thickness.unwrap(),
+        *color,
+        filled,
+    );
+
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
+
+pub fn send_clear_screen(port: &mut dyn SerialPort) {
+    let result = serialize_clear();
+
+    if let Some(packet) = result {
+        let _result = port.write(&packet);
+        thread::sleep(time::Duration::from_millis(50));
     }
 }

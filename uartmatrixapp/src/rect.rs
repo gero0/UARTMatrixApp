@@ -3,7 +3,9 @@ use iced::{
     Color, Rectangle, Size,
 };
 
-use crate::{helper_structs::RgbColor, Message};
+use libuartmatrix::RgbColor;
+
+use crate::Message;
 
 #[derive(Debug)]
 pub struct Rect {

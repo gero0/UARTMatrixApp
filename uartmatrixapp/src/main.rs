@@ -53,9 +53,19 @@ pub enum Message {
     SendFonts,
     //Direct mode
     DrawPixel,
+    DrawLine,
     DrawRectangle,
     DrawTriangle,
     DrawCircle,
+    ShapeColorChanged(i32, usize),
+    ThicknessChanged(String),
+    FilledChanged(bool),
+    PixelCoordChanged(String, i32),
+    LineCoordChanged(String, i32, i32),
+    RectangleCoordChanged(String, i32, i32),
+    TriangleCoordChanged(String, i32, i32),
+    CircleCoordChanged(String, i32),
+    ClearScreen,
 }
 
 struct App {
@@ -142,9 +152,9 @@ impl Application for App {
             Message::ColorChanged(value, row, color) => {
                 let mut row = &mut self.text_mode_data.color_slider_values[row];
                 match color {
-                    0 => row.r = value,
-                    1 => row.g = value,
-                    2 => row.b = value,
+                    0 => row.r = value as u8,
+                    1 => row.g = value as u8,
+                    2 => row.b = value as u8,
                     _ => panic!("Invalid color index!"),
                 }
             }
@@ -242,6 +252,140 @@ impl Application for App {
                         Err(_e) => println!("Error opening file"),
                     }
                 };
+            }
+
+            Message::FilledChanged(state) => {
+                self.direct_mode_data.filled_value = state;
+            }
+
+            Message::ThicknessChanged(value) => {
+                self.direct_mode_data.shape_thickness_value = value;
+            }
+
+            Message::ShapeColorChanged(value, color) => {
+                let mut values = &mut self.direct_mode_data.color_slider_values;
+                match color {
+                    0 => values.r = value as u8,
+                    1 => values.g = value as u8,
+                    2 => values.b = value as u8,
+                    _ => panic!("Invalid color index!"),
+                }
+            }
+
+            Message::PixelCoordChanged(value, coord) => {
+                if coord == 0 {
+                    self.direct_mode_data.pixel_x_text_input = value
+                } else {
+                    self.direct_mode_data.pixel_y_text_input = value
+                }
+            }
+
+            Message::RectangleCoordChanged(value, point, coord) => match point {
+                0 => match coord {
+                    0 => self.direct_mode_data.rectangle_x_1_text_input = value,
+                    _ => self.direct_mode_data.rectangle_y_1_text_input = value,
+                },
+                _ => match coord {
+                    0 => self.direct_mode_data.rectangle_x_2_text_input = value,
+                    _ => self.direct_mode_data.rectangle_y_2_text_input = value,
+                },
+            },
+
+            Message::LineCoordChanged(value, point, coord) => match point {
+                0 => match coord {
+                    0 => self.direct_mode_data.line_x_1_text_input = value,
+                    _ => self.direct_mode_data.line_y_1_text_input = value,
+                },
+                _ => match coord {
+                    0 => self.direct_mode_data.line_x_2_text_input = value,
+                    _ => self.direct_mode_data.line_y_2_text_input = value,
+                },
+            },
+
+            Message::TriangleCoordChanged(value, point, coord) => match point {
+                0 => match coord {
+                    0 => self.direct_mode_data.triangle_x_1_text_input = value,
+                    _ => self.direct_mode_data.triangle_y_1_text_input = value,
+                },
+                1 => match coord {
+                    0 => self.direct_mode_data.triangle_x_2_text_input = value,
+                    _ => self.direct_mode_data.triangle_y_2_text_input = value,
+                },
+                _ => match coord {
+                    0 => self.direct_mode_data.triangle_x_3_text_input = value,
+                    _ => self.direct_mode_data.triangle_y_3_text_input = value,
+                },
+            },
+
+            Message::CircleCoordChanged(value, point) => match point {
+                0 => self.direct_mode_data.circle_x_text_input = value,
+                1 => self.direct_mode_data.circle_y_text_input = value,
+                _ => self.direct_mode_data.circle_radius_text_input = value,
+            },
+
+            Message::DrawPixel => {
+                send_draw_pixel(
+                    self.device.as_mut().unwrap().as_mut(),
+                    &self.direct_mode_data.pixel_x_text_input,
+                    &self.direct_mode_data.pixel_y_text_input,
+                    &self.direct_mode_data.color_slider_values,
+                );
+            }
+
+            Message::DrawLine => {
+                send_draw_line(
+                    self.device.as_mut().unwrap().as_mut(),
+                    &self.direct_mode_data.line_x_1_text_input,
+                    &self.direct_mode_data.line_y_1_text_input,
+                    &self.direct_mode_data.line_x_2_text_input,
+                    &self.direct_mode_data.line_y_2_text_input,
+                    &self.direct_mode_data.color_slider_values,
+                    &self.direct_mode_data.shape_thickness_value,
+                );
+            }
+
+            Message::DrawRectangle => {
+                send_draw_rectangle(
+                    self.device.as_mut().unwrap().as_mut(),
+                    &self.direct_mode_data.rectangle_x_1_text_input,
+                    &self.direct_mode_data.rectangle_y_1_text_input,
+                    &self.direct_mode_data.rectangle_x_2_text_input,
+                    &self.direct_mode_data.rectangle_y_2_text_input,
+                    &self.direct_mode_data.color_slider_values,
+                    &self.direct_mode_data.shape_thickness_value,
+                    self.direct_mode_data.filled_value,
+                );
+            }
+
+            Message::DrawTriangle => {
+                send_draw_triangle(
+                    self.device.as_mut().unwrap().as_mut(),
+                    &self.direct_mode_data.triangle_x_1_text_input,
+                    &self.direct_mode_data.triangle_y_1_text_input,
+                    &self.direct_mode_data.triangle_x_2_text_input,
+                    &self.direct_mode_data.triangle_y_2_text_input,
+                    &self.direct_mode_data.triangle_x_3_text_input,
+                    &self.direct_mode_data.triangle_y_3_text_input,
+                    &self.direct_mode_data.color_slider_values,
+                    &self.direct_mode_data.shape_thickness_value,
+                    self.direct_mode_data.filled_value,
+                );
+            }
+
+            Message::DrawCircle => {
+                send_draw_circle(
+                    self.device.as_mut().unwrap().as_mut(),
+                    &self.direct_mode_data.circle_x_text_input,
+                    &self.direct_mode_data.circle_y_text_input,
+                    &self.direct_mode_data.circle_radius_text_input,
+                    &self.direct_mode_data.color_slider_values,
+                    &self.direct_mode_data.shape_thickness_value,
+                    self.direct_mode_data.filled_value,
+                );
+            }
+
+            Message::ClearScreen => {
+                send_clear_screen(self.device.as_mut().unwrap().as_mut());
             }
 
             _ => {}
