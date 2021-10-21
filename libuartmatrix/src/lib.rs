@@ -1,16 +1,20 @@
-use crate::enums::{Animation, DisplayMode};
+use crate::enums::{Animation, Direction, DisplayMode};
+
+use std::os::raw::*;
 
 pub mod enums;
 
 pub const MAX_FRAME_SIZE: usize = 512;
 pub const MAX_TEXT_LENGTH: usize = 255;
 
+#[repr(C)]
 pub struct Point {
     pub x: u8,
     pub y: u8,
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(C)]
 pub struct RgbColor {
     pub r: u8,
     pub g: u8,
@@ -183,6 +187,207 @@ pub fn serialize_disable_output() -> Option<[u8; MAX_FRAME_SIZE]> {
 
 pub fn serialize_ping() -> Option<[u8; MAX_FRAME_SIZE]> {
     serialize_umx_frame(&[11])
+}
+
+//FFI interfaces
+
+fn opt_array_to_ffi(buffer: *mut c_uchar, array: Option<[u8; MAX_FRAME_SIZE]>) -> c_int {
+    match array {
+        Some(array) => {
+            unsafe {
+                std::ptr::copy(array.as_ptr(), buffer as *mut u8, array.len());
+            }
+            return array.len() as c_int;
+        }
+        None => return -1 as c_int,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_param_request(buffer: *mut c_uchar) -> c_int {
+    let result = serialize_param_request();
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_switch_mode(buffer: *mut c_uchar, mode: c_int) -> c_int {
+    let mode = match mode {
+        0 => DisplayMode::Text,
+        _ => DisplayMode::Direct,
+    };
+
+    let result = serialize_switch_mode(mode);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_write_line(
+    buffer: *mut c_uchar,
+    row: c_uchar,
+    text: *const c_uchar,
+    text_len: c_uint,
+) -> c_int {
+    unsafe {
+        let slice = core::slice::from_raw_parts(text, text_len as usize);
+        let string = core::str::from_utf8(slice);
+        match string {
+            Ok(string) => {
+                let result = serialize_write_line(row as u8, string);
+                return opt_array_to_ffi(buffer, result);
+            }
+            Err(_e) => {
+                return -1;
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_set_font(
+    buffer: *mut c_uchar,
+    row: c_uchar,
+    font: c_uchar,
+) -> c_int {
+    let result = serialize_set_font(row, font);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_set_color(
+    buffer: *mut c_uchar,
+    row: c_uchar,
+    color: RgbColor,
+) -> c_int {
+    let result = serialize_set_color(row, color);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_set_animation(
+    buffer: *mut c_uchar,
+    row: c_uchar,
+    animation: c_uchar,
+    speed: c_uchar,
+    direction: c_uchar,
+) -> c_int {
+    let animation = match animation {
+        1 => Animation::BlinkAnimation(speed),
+        2 => {
+            let dir = match direction {
+                0 => Direction::Left,
+                _ => Direction::Right,
+            };
+            Animation::SlideAnimation(speed, dir)
+        }
+        _ => Animation::NoAnimation,
+    };
+    let result = serialize_set_animation(row, animation);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_draw_pixel(
+    buffer: *mut c_uchar,
+    position: Point,
+    color: RgbColor,
+) -> c_int {
+    let result = serialize_draw_pixel(position, color);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_draw_rectangle(
+    buffer: *mut c_uchar,
+    point_1: Point,
+    point_2: Point,
+    thickness: c_uchar,
+    color: RgbColor,
+    filled: c_int,
+) -> c_int {
+    let filled = match filled {
+        0 => false,
+        _ => true,
+    };
+    let result = serialize_draw_rectangle(point_1, point_2, thickness as u8, color, filled);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_draw_triangle(
+    buffer: *mut c_uchar,
+    point_1: Point,
+    point_2: Point,
+    point_3: Point,
+    thickness: c_uchar,
+    color: RgbColor,
+    filled: c_int,
+) -> c_int {
+    let filled = match filled {
+        0 => false,
+        _ => true,
+    };
+    let result = serialize_draw_triangle(point_1, point_2, point_3, thickness as u8, color, filled);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_draw_circle(
+    buffer: *mut c_uchar,
+    center: Point,
+    radius: c_uchar,
+    thickness: c_uchar,
+    color: RgbColor,
+    filled: c_int,
+) -> c_int {
+    let filled = match filled {
+        0 => false,
+        _ => true,
+    };
+    let result = serialize_draw_circle(center, radius as u8, thickness as u8, color, filled);
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_draw_row(
+    buffer: *mut c_uchar,
+    row: c_uchar,
+    pixels: *const RgbColor,
+    pixels_len: c_uint,
+) -> c_int{
+    unsafe {
+        let mut vec = vec![];
+        let slice = core::slice::from_raw_parts(pixels, pixels_len as usize);
+        slice
+            .iter()
+            .for_each(|element| vec.push((element.r, element.g, element.b)));
+
+        let result = serialize_draw_row(row, vec);
+        return opt_array_to_ffi(buffer, result);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_clear(buffer: *mut c_uchar) -> c_int {
+    let result = serialize_clear();
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_enable_output(buffer: *mut c_uchar) -> c_int {
+    let result = serialize_enable_output();
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_disable_output(buffer: *mut c_uchar) -> c_int {
+    let result = serialize_disable_output();
+    return opt_array_to_ffi(buffer, result);
+}
+
+#[no_mangle]
+pub extern "C" fn umx_serialize_ping(buffer: *mut c_uchar) -> c_int {
+    let result = serialize_ping();
+    return opt_array_to_ffi(buffer, result);
 }
 
 #[cfg(test)]
