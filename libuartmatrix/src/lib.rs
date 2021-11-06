@@ -3,6 +3,7 @@ use crate::enums::{Animation, Direction, DisplayMode};
 use std::os::raw::*;
 
 pub mod enums;
+mod crc;
 
 pub const MAX_FRAME_SIZE: usize = 512;
 pub const MAX_TEXT_LENGTH: usize = 255;
@@ -44,6 +45,7 @@ fn serialize_umx_frame(content: &[u8]) -> Option<[u8; MAX_FRAME_SIZE]> {
     buffer[4] = length as u8;
 
     buffer[5..(content.len() + 5)].clone_from_slice(&content);
+    buffer[content.len() + 5] = crc::crc8_ccitt(&buffer[5..(content.len() + 5)]);
 
     Some(buffer)
 }
