@@ -244,7 +244,7 @@ impl Application for App {
                         Ok(img) => {
                             let img = img.decode();
                             if let Ok(img) = img {
-                                let img = img.resize(64, 32, FilterType::Gaussian);
+                                let img = img.resize(64, 32, FilterType::Lanczos3);
                                 let img = img.into_rgb8();
                                 send_image(self.device.as_mut().unwrap().as_mut(), img);
                             }
