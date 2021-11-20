@@ -297,18 +297,28 @@ fn create_single_anim_section<'a>(
         .push(anim);
 
     if let Some(anim) = anim_value {
-        if let Animation::None = anim {
-            //Do nothing
-        } else {
-            let speed_text_field = TextInput::new(
-                speed_state,
-                "Animation speed",
-                &speed_value,
-                move |content| Message::AnimSpeedChanged(content, id),
-            );
-            row = row.push(speed_text_field);
+        match anim {
+            Animation::None => {
+                //do nothing
+            }
+            Animation::Blink => {
+                let speed_text_field = TextInput::new(
+                    speed_state,
+                    "Animation speed (hz) (max 60)",
+                    &speed_value,
+                    move |content| Message::AnimSpeedChanged(content, id),
+                );
+                row = row.push(speed_text_field);
+            }
+            Animation::Slide => {
+                let speed_text_field = TextInput::new(
+                    speed_state,
+                    "Animation speed (px/s) (max 60)",
+                    &speed_value,
+                    move |content| Message::AnimSpeedChanged(content, id),
+                );
+                row = row.push(speed_text_field);
 
-            if let Animation::Slide = anim {
                 let direction_picker = PickList::new(
                     direction_state,
                     &Direction::ALL[..],

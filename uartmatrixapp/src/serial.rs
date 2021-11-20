@@ -62,14 +62,18 @@ pub fn send_animations(
                 if speed.is_err() {
                     continue;
                 }
+                let speed = 60 / speed.unwrap();
 
-                libuartmatrix::enums::Animation::BlinkAnimation(speed.unwrap())
+                libuartmatrix::enums::Animation::BlinkAnimation(speed)
             }
             Animation::Slide => {
                 let speed = str::parse::<u8>(speed);
+                
                 if speed.is_err() {
                     continue;
                 }
+
+                let speed = 60 / speed.unwrap();
 
                 if direction.is_none() {
                     continue;
@@ -80,7 +84,7 @@ pub fn send_animations(
                     Direction::Right => libuartmatrix::enums::Direction::Right,
                 };
 
-                libuartmatrix::enums::Animation::SlideAnimation(speed.unwrap(), dir)
+                libuartmatrix::enums::Animation::SlideAnimation(speed, dir)
             }
             Animation::None => libuartmatrix::enums::Animation::NoAnimation,
         };
