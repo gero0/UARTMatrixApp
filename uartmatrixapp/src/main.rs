@@ -406,13 +406,13 @@ impl Application for App {
             .on_press(Message::RefreshDevices);
 
         let mut connect_button = Button::new(&mut self.connect_btn, Text::new("Connect"));
-        let mut ping_button = Button::new(&mut self.ping_btn, Text::new("Ping"));
+        // let mut ping_button = Button::new(&mut self.ping_btn, Text::new("Ping"));
         let mut change_mode_button =
             Button::new(&mut self.change_mode_btn, Text::new("Change display mode"));
         if let AppState::NotConnected = self.state {
             connect_button = connect_button.on_press(Message::ConnectDevice);
         } else {
-            ping_button = ping_button.on_press(Message::Ping);
+            // ping_button = ping_button.on_press(Message::Ping);
             change_mode_button = change_mode_button.on_press(Message::ChangeMode);
         }
 
@@ -421,7 +421,7 @@ impl Application for App {
             .push(port_list)
             .push(refresh_button)
             .push(connect_button)
-            .push(ping_button)
+            // .push(ping_button)
             .push(change_mode_button);
 
         let mut content = Column::new().push(controls).spacing(20);
